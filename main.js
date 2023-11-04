@@ -9,50 +9,66 @@ const CONFIG = {
 
 const PORT = 3000;
 const client = new line.Client(CONFIG);
-// 外部のjsonファイルを読み込む
 const flexMessage = require('./addTaskFlexMessage.json');
 const app = express();
 
+const appState = {
+    addTaskMode: false,
+    messageCount: 0,
+};
 
-app.post("/webhook", line.middleware(CONFIG), (req, res) => sendFlexMessage(req, res))
+app.post("/webhook", line.middleware(CONFIG), (req, res) => {
+    sendFlexMessage(req, res, appState);
+});
 
-
-function handleBot(req, res) {
+function sendFlexMessage(req, res, appState) {
     res.status(200).end();
-    req.body.events.map((event) => {
-        // 外部で定義されたclientオブジェクトを使用します
+    let responseMessage = req.body.events[0].message.text;
+
+    if (appState.addTaskMode) {
+        createTask(req, res, appState);
+        appState.messageCount++;
+        if (appState.messageCount > 1) {
+            appState.messageCount = 0;
+            appState.addTaskMode = false;
+        }
+    } else {
+        if (responseMessage === "課題の登録") {
+            appState.addTaskMode = true;
+            appState.messageCount = 0;
+            createTask(req, res, appState);
+            appState.messageCount++;
+        } else if (responseMessage === "課題の一覧表示") {
+            // 一覧表示メッセージの送信処理
+            sendListOfTasks(req, res);
+        }
+    }
+}
+
+function createTask(req, res, appState) {
+    const messageContent = ["登録したい課題の名前を入力してください", "課題の期限を入力してください"];
+    req.body.events.forEach((event) => {
         client.replyMessage(event.replyToken, {
             type: "text",
-            text: "Hello, world"
+            text: messageContent[appState.messageCount]
         }).then(() => {
             console.log("Reply sent!");
         }).catch((err) => {
-            // エラーハンドリングを追加
             console.error("An error occurred when sending reply:", err);
         });
-        console.log("event", event);
     });
 }
 
-
-function sendFlexMessage(req, res) {
-    res.status(200).end();
-    Promise.all(req.body.events.map(event => {
-        return client.pushMessage(event.source.userId, [flexMessage])
+function sendListOfTasks(req, res) {
+    req.body.events.forEach((event) => {
+        client.pushMessage(event.source.userId, [flexMessage])
             .then(() => {
                 console.log(`Message sent to ${event.source.userId}`);
             })
-            .catch(err => {
+            .catch((err) => {
                 console.error(`Error sending message to ${event.source.userId}:`, err);
             });
-    }))
-        .then(() => {
-            console.log('All messages sent successfully');
-        })
-        .catch(err => {
-            console.error('An error occurred while sending messages:', err);
-        });
+    });
 }
-
 
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));
