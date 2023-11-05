@@ -15,7 +15,12 @@ const app = express();
 const appState = {
     addTaskMode: false,
     messageCount: 0,
+    taskId: 0
 };
+
+// 課題の一覧を格納するオブジェクト
+let tasks = {}; // {"task1:{"tasktilte":"hoge","subject_symbol","deadline":"2020/12/31"}}
+
 
 app.post("/webhook", line.middleware(CONFIG), (req, res) => {
     sendFlexMessage(req, res, appState);
@@ -24,11 +29,24 @@ app.post("/webhook", line.middleware(CONFIG), (req, res) => {
 function sendFlexMessage(req, res, appState) {
     res.status(200).end();
     let responseMessage = req.body.events[0].message.text;
+    if (!tasks["task" + appState.taskId]) {
+        tasks["task" + appState.taskId] = {}; // 新しいオブジェクトを初期化
+    }
 
     if (appState.addTaskMode) {
+        req.body.events.forEach((event) => {
+            if (appState.messageCount === 1) {
+                tasks["task" + appState.taskId]["tasktitle"] = responseMessage;
+                console.log(tasks);
+            } else if (appState.messageCount === 2) {
+                tasks["task" + appState.taskId]["deadline"] = responseMessage;
+                console.log(tasks);
+                appState.taskId++;
+            }
+        });
         createTask(req, res, appState);
-        appState.messageCount++;
-        if (appState.messageCount > 1) {
+
+        if (appState.messageCount > 3) {
             appState.messageCount = 0;
             appState.addTaskMode = false;
         }
@@ -37,7 +55,7 @@ function sendFlexMessage(req, res, appState) {
             appState.addTaskMode = true;
             appState.messageCount = 0;
             createTask(req, res, appState);
-            appState.messageCount++;
+
         } else if (responseMessage === "課題の一覧表示") {
             // 一覧表示メッセージの送信処理
             sendListOfTasks(req, res);
@@ -46,8 +64,10 @@ function sendFlexMessage(req, res, appState) {
 }
 
 function createTask(req, res, appState) {
-    const messageContent = ["登録したい課題の名前を入力してください", "課題の期限を入力してください"];
+    const messageContent = ["登録したい課題の名前を入力してください", "課題の期限を入力してください", "課題の登録が完了しました"];
+
     req.body.events.forEach((event) => {
+
         client.replyMessage(event.replyToken, {
             type: "text",
             text: messageContent[appState.messageCount]
@@ -57,6 +77,9 @@ function createTask(req, res, appState) {
             console.error("An error occurred when sending reply:", err);
         });
     });
+
+    appState.messageCount++;
+    console.log(appState);
 }
 
 function sendListOfTasks(req, res) {
