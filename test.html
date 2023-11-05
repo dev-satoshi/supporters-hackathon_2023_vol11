@@ -1,0 +1,62 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Chart Sample</title>
+</head>
+<body>
+    <h1 style="text-align: center;">課題提出率チャート</h1>
+    <div style="width: 600px; background-color:	#f8fdff; margin: 0 auto;">
+        <canvas id="chart" width="600" height="400"></canvas>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js" integrity="sha256-R4pqcOYV8lt7snxMQO/HSbVCFRPMdrhAFMH+vr9giYI=" crossorigin="anonymous"></script>
+    <script>
+        var ctx = $('#chart');
+        var sampleLabels=['IA22','CL21','CS2C','DB22','MK21'];
+        var sampledata1=[90,70,80,60,100];
+        var sampledata2=[80,90,70,80,40];
+        var mychart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: sampleLabels,
+                datasets: [{
+                    label: '前期',
+                    data: sampledata1,
+                    backgroundColor: 'rgba(214, 94, 0, 0.3)',
+                    borderColor: 'rgba(0, 0, 0, 0.3)',
+                    borderWidth: 1,
+                    pointBackgroundColor: 'rgba(214, 94, 0,0.7)',
+                    pointHoverRadius: 5,
+                },{
+                    label: '後期',
+                    data: sampledata2,
+                    backgroundColor: 'rgba( 214, 255, 0, 0.3)',
+                    borderColor: 'rgba(0, 0, 0, 0.3)',
+                    borderWidth: 1,
+                    pointBackgroundColor: 'rgba(214, 255, 0,0.7)',
+                    pointHoverRadius: 5,
+                }]
+            },
+            options: {
+              chartArea: {
+                backgroundColor: 'rgba(0, 0, 0, 1)'
+              },
+              title: {
+                  display: true,
+                  text: '提出率',
+              },
+              scale: {
+                  ticks: {
+                      suggestedMin: 0,
+                      suggestedMax: 100,
+                      stepSize: 20,
+                      callback: function(value, index, values){
+                          return  value +  '%'
+                      }
+                  },
+              }
+            }
+        });
+    </script>
+</body>
+</html>
